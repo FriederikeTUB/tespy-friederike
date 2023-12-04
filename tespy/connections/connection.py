@@ -260,6 +260,16 @@ class Connection:
         self.local_design = False
         self.local_offdesign = False
         self.printout = True
+        """+F+F+F+F++++START++++F+F+F+F+"""
+        self.c_therm = 0
+        self.c_mech = 0
+        self.c_chemical = 0
+        self.c_tot = 0
+        self.C_therm = 0
+        self.C_mech = 0
+        self.C_chemical = 0
+        self.C_tot = 0
+        """+F+F+F+F++++START++++F+F+F+F+"""
 
         # set default values for kwargs
         self.property_data = self.get_parameters()

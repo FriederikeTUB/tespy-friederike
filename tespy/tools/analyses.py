@@ -329,7 +329,7 @@ class ExergyAnalysis:
             )
             raise ValueError(msg)
 
-    def analyse(self, pamb, Tamb, Chem_Ex=None):
+    def analyse(self, pamb, Tamb, Chem_Ex=None, Exe_Eco_An=False, Exe_Eco_Costs=[]):
         """Run the exergy analysis.
 
         Parameters
@@ -489,6 +489,127 @@ class ExergyAnalysis:
             logger.error(msg)
 
         self.create_group_data()
+
+        """+F+F+F+F++++START++++F+F+F+F+"""
+        if Exe_Eco_An is True:
+            for comp in self.nw.comps['object']:
+                Z_id = f"{comp.label}_Z"
+                if comp.component() =="source":
+                    Z_id = f"{comp.label}_c"      # source and sink have specific exergetic costs
+                    if Z_id in Exe_Eco_Costs:
+                        comp.set_source_costs(Exe_Eco_Costs[f"{Z_id}"])
+                    else:
+                        comp.set_source_costs()
+                elif comp.component()=="sink":
+                    Z_id = f"{comp.label}_c"       # source and sink have specific exergetic costs
+                    if Z_id in Exe_Eco_Costs:
+                        comp.set_sink_costs(Exe_Eco_Costs[f"{Z_id}"])
+                    else:
+                        comp.set_sink_costs()
+                else:
+                    if Z_id in Exe_Eco_Costs:
+                        comp.set_Z_costs(Exe_Eco_Costs[f"{Z_id}"])
+                    else:
+                        comp.set_Z_costs_standard()
+
+            conns_list = self.nw.conns['object'].tolist()
+
+            # determine number of columns for A matrix
+            # number of connections
+            s = len(self.nw.conns)
+            for comp in self.nw.comps['object']:
+                if comp.component() == "cycle closer":              # cycles in network produce one extra component that isn't real
+                    s -= 1
+
+            # number of heat / power in / out puts
+            q = 0
+            for bus in self.nw.busses.values():
+                for comp in bus.comps.index:
+                    if bus.comps.loc[comp, 'P_ref'] > 0 or bus.comps.loc[comp, 'P_ref'] < 0:
+                        q += 1
+
+            colNum = s+q
+
+            # FOR CYCLE CLOSER NEED TO "REMOVE" ONE CONNECTION
+            cycleends = []
+            cyclestarts = []
+            for comp in self.nw.comps['object']:
+                if comp.component() == "cycle closer":
+                    cycleends.append(comp.inl[0])
+                    cyclestarts.append(comp.outl[0])
+
+            for comp in self.nw.comps['object']:
+                a = np.zeros(colNum)  # line to add to A
+                # ADD KNOWN SOURCE COSTS TO MATRIX
+                if comp.component() == "source" and not np.isnan(comp.Z_costs):
+                    connNum = 0                                                 # connection number for index in A
+                    for connection_in_network in conns_list:
+                        if comp.outl[0] == connection_in_network:  # better to use equals() ?
+                            a[connNum] = +1
+                            A = np.vstack([A, a]) if 'A' in locals() else a  # if A exists, add line a, otherwise A=a
+                            b = np.vstack([b, -comp.Z_costs]) if 'b' in locals() else -comp.Z_costs
+                            # continue
+                        connNum += 1
+                # FOR SINK AS WELL?
+                # ADD COST BALANCE FOR EACH COMPONENT that isn't a source nor a cycle closer and has an associated cost value
+                elif not comp.component() == "cycle closer" and not np.isnan(comp.Z_costs):
+                    for comp_inl in comp.inl:
+                        connNum = 0                                                          # connection number for index in A
+                        for connection_in_network in conns_list:
+                            if comp_inl == connection_in_network:                            # better to use equals() ?
+                                a[connNum] = +1
+                                """
+                                A[k][m] = +1        # thermal exergy related costs
+                                A[k][m+s] = +1      # mechanical exergy related costs
+                                A[k][m+2*s] = +1    # chemical exergy related costs
+                                """
+                            connNum += 1
+                    for comp_outl in comp.outl:
+                        if comp_outl in cycleends:
+                            #print("this is a cycle end: ", comp_outl.label)
+                            comp_outl = cyclestarts[cycleends.index(comp_outl)]
+                            #print("this is the cycle start: ", comp_outl.label)
+                        connNum = 0                                                           # connection number for index in A
+                        for connection_in_network in conns_list:
+                            if comp_outl == connection_in_network:                            # better to use equals() ?
+                                a[connNum] = -1
+                                """
+                                A[k][m] = -1          # thermal exergy related costs
+                                A[k][m + s] = -1      # mechanical exergy related costs
+                                A[k][m + 2 * s] = -1  # chemical exergy related costs
+                                """
+                            connNum += 1
+                        A = np.vstack([A, a]) if 'A' in locals() else a  # if A exists, add line a, otherwise A=a
+                        b = np.vstack([b, -comp.Z_costs]) if 'b' in locals() else [-comp.Z_costs]
+                print("bus value: ", comp.label, comp.E_bus['massless'])
+                # ADD AUXILIARY EQUATIONS
+
+            # ADD KNOWN BUS COSTS TO MATRIX
+            busNum = 0  # bus number for index in A
+            for bus in self.nw.busses.values():
+                a = np.zeros(colNum)  # line to add to A
+                for comp in bus.comps.index:
+                    if bus.comps.loc[comp, 'P_ref'] > 0:  # power or heat entering component
+                        a[s + busNum] = 1
+                        A = np.vstack([A, a]) if 'A' in locals() else a  # if A exists, add line a, otherwise A=a
+                        b = np.vstack([b, 7]) if 'b' in locals() else 7  # to do: add price of bus instead of 7
+                    # FOR EXITING STREAMS AS WELL?
+                    busNum += 1
+
+            # include balance for the whole system
+            print(A)
+            print(b)
+            """
+            try:
+                C = np.linalg.solve(A, b)
+            except np.linalg.LinAlgError:
+                msg = f"System is not solvable\nA = \n{A} \n b =\n{b}"
+                logger.error(msg)
+                raise hlp.TESPyNetworkError(msg)
+            print(C)
+            """
+
+        """+F+F+F+F++++END++++F+F+F+F+"""
 
     def evaluate_busses(self, cp):
         """Evaluate the exergy balances of busses.
@@ -812,7 +933,7 @@ class ExergyAnalysis:
     def print_results(
             self, sort_desc=True,
             busses=True, components=True, connections=True, groups=True,
-            network=True, aggregation=True):
+            network=True, aggregation=True, Exe_Eco_An = False):
         r"""Print the results of the exergy analysis to prompt.
 
         - The results are sorted beginning with the component having the
@@ -892,3 +1013,47 @@ class ExergyAnalysis:
             print('##### RESULTS: Functional groups exergy flows #####')
             print(tabulate(
                 df, headers='keys', tablefmt='psql', floatfmt='.3e'))
+
+        """+F+F+F+F++++START++++F+F+F+F+"""
+        # Exergoeconomic Results for Connections
+        # creating data frame here bc this is after analysis where c and C values have been calculated already
+        conn_exergoec_data_cols = ['c_T', 'c_M', 'c_CH', 'C_T', 'C_M', 'C_CH']
+        self.connection_exergoec_data = pd.DataFrame(
+            columns=conn_exergoec_data_cols,
+            dtype='float64'
+        )
+        for conn in self.nw.conns['object']:
+            conn_exergoec_data = [
+                conn.c_therm, conn.c_mech, conn.c_chemical,
+                conn.C_therm, conn.C_mech, conn.C_chemical
+            ]
+            self.connection_exergoec_data.loc[conn.label] = conn_exergoec_data
+
+        if connections and Exe_Eco_An:
+            print('##### RESULTS: Connection exergoeconomic analysis #####')
+            print(tabulate(
+                self.connection_exergoec_data, headers='keys',
+                tablefmt='psql', floatfmt='.3e'))
+
+
+            # Exergoeconomic Results for Components
+            # creating data frame here bc this is after analysis where c and C values have been calculated already
+            comp_exergoec_data_cols = ['C_F', 'C_P', 'C_D', 'Z', 'r', 'f']
+            self.component_exergoec_data = pd.DataFrame(
+                columns=comp_exergoec_data_cols,
+                dtype='float64'
+            )
+            for comp in self.nw.comps['object']:
+                comp_exergoec_data = [
+                    comp.C_F, comp.C_P, comp.C_D, comp.Z_costs, comp.r, comp.f
+                ]
+                self.component_exergoec_data.loc[comp.label] = comp_exergoec_data
+
+            if components and Exe_Eco_An:
+                print('##### RESULTS: Component exergoeconomic analysis #####')
+                print(tabulate(
+                    self.component_exergoec_data, headers='keys',
+                    tablefmt='psql', floatfmt='.3e'))
+
+        """+F+F+F+F++++END++++F+F+F+F+"""
+

@@ -120,6 +120,14 @@ class Component:
         self.char_warnings = True
         self.printout = True
         self.fkt_group = self.label
+        """+F+F+F+F++++START++++F+F+F+F+"""
+        self.Z_costs = 0          # will be overwritten by a standard cost function in each component
+        self.C_F = 0
+        self.C_P = 0
+        self.C_D = 0
+        self.r = 0
+        self.f = 0
+        """+F+F+F+F++++END++++F+F+F+F+"""
 
         # add container for components attributes
         self.parameters = OrderedDict(self.get_parameters().copy())
@@ -1215,3 +1223,30 @@ class Component:
         # custom variable zeta
         if data.is_var:
             self.jacobian[k, data.J_col] = self.numeric_deriv(f, zeta, None, **kwargs)
+
+    """+F+F+F+F++++START++++F+F+F+F+"""
+   #@Z_costs.setter
+    def set_Z_costs(self, value):
+        self.Z_costs = value
+
+    def set_Z_costs_standard(self):
+        # if no Z cost is given by user, implement standard price functions for each component
+        self.Z_costs = 0    # to be implemented in each component
+
+    def calculate_C_P(self):
+        return 0
+
+    def calculate_C_F(self):
+        return 0
+
+    def calculate_C_D(self):
+        return 0
+
+    def calculate_r(self):
+        return 0
+
+    def calculate_f(self):
+        return 0
+
+    """+F+F+F+F++++END++++F+F+F+F+"""
+

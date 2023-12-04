@@ -122,3 +122,33 @@ class Source(Component):
         }
         self.E_D = np.nan
         self.epsilon = self._calc_epsilon()
+
+
+    """+F+F+F+F++++START++++F+F+F+F+    von Jubran"""
+    def set_source_costs(self, c_tot=None):
+        self.Z_costs = np.nan
+        self.C_F = np.nan
+        self.C_P = np.nan
+        self.C_D = np.nan
+        self.r = np.nan
+        self.f = np.nan
+
+        if c_tot:
+            self.outl[0].c_tot = c_tot
+            # calculate outlet
+            self.outl[0].Ex_tot = self.outl[0].Ex_physical + self.outl[0].Ex_chemical
+            self.outl[0].C_tot = self.outl[0].c_tot * self.outl[0].Ex_tot
+            self.Z_costs = self.outl[0].C_tot
+
+            # approx costs per exergy unit fot T,M, PH and CH
+            self.outl[0].C_therm = self.outl[0].C_tot * (self.outl[0].Ex_therm / self.outl[0].Ex_tot)
+            self.outl[0].C_mech = self.outl[0].C_tot * (self.outl[0].Ex_mech / self.outl[0].Ex_tot)
+            self.outl[0].C_chemical = self.outl[0].C_tot * (self.outl[0].Ex_chemical / self.outl[0].Ex_tot)
+
+            self.outl[0].c_therm = 0 if self.outl[0].Ex_therm == 0 else self.outl[0].C_therm / self.outl[
+                0].Ex_therm
+            self.outl[0].c_mech = 0 if self.outl[0].Ex_mech == 0 else self.outl[0].C_mech / self.outl[0].Ex_mech
+            self.outl[0].c_chemical = 0 if self.outl[0].Ex_chemical == 0 else self.outl[0].C_chemical / self.outl[
+                0].Ex_chemical
+
+        """+F+F+F+F++++END++++F+F+F+F+    von Jubran"""

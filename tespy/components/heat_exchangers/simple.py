@@ -1151,6 +1151,10 @@ class SimpleHeatExchanger(Component):
             }
         }
 
+    def set_Z_costs_standard(self):
+        # if no Z cost is given by user, implement standard price function
+        self.Z_costs = 120
+
 
 class HeatExchangerSimple(SimpleHeatExchanger):
 
