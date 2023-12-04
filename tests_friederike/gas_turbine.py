@@ -61,8 +61,6 @@ chamber_to_turbine.set_attr(T=1200)
 turbine_to_exhaust.set_attr(p=Ref(so_to_comp, 1, 0))  # ref obj: p of so_to_como. Factor 1, add 0
 turbine.set_attr(eta_s=0.9)
 
-
-
 # solve
 nw.solve(mode="design")
 nw.print_results()
