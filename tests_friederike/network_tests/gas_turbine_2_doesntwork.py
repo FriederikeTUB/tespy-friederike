@@ -3,8 +3,7 @@ from tespy.components import (Source, Compressor, DiabaticCombustionChamber, Tur
 from tespy.connections import Connection, Ref, Bus
 
 # network
-fluid_list = ["Ar", "N2", "O2", "CO2", "CH4", "H2O", "H2"]
-nw = Network(fluids=fluid_list, p_unit="bar", T_unit="C")
+nw = Network(p_unit="bar", T_unit="C")
 
 # components
 turbine = Turbine('Turbine')

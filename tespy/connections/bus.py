@@ -194,6 +194,10 @@ class Bus:
         self.char = CharLine(x=np.array([0, 3]), y=np.array([1, 1]))
         self.printout = True
         self.jacobian = {}
+        """+F+F+F+F++++START++++F+F+F+F+"""
+        self.c_tot = 0
+        self.C_tot = 0
+        """+F+F+F+F++++START++++F+F+F+F+"""
 
         self.set_attr(**kwargs)
 
@@ -429,3 +433,7 @@ class Bus:
     def clear_jacobian(self):
         for k in self.jacobian:
             self.jacobian[k] = 0
+
+    def set_bus_costs(self, value=0):
+        self.c_tot = value
+        self.C_tot = value * self.P.val

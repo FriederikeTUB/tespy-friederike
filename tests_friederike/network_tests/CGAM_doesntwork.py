@@ -1,33 +1,19 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-import pandas as pd
-
 from CoolProp.CoolProp import PropsSI as CPSI
-
 from tespy.networks import Network
 from tespy.components import (
     HeatExchanger, Turbine, Compressor, Drum,
     DiabaticCombustionChamber, Sink, Source
 )
 from tespy.connections import Connection, Bus
-from tespy.tools import document_model
 from chemical_exergy.libChemExAhrendts import Chem_Ex
 
+nw = Network(p_unit='bar', T_unit='C')
 
-fluid_list = ['O2', 'H2O', 'N2', 'CO2', 'CH4']
-nw = Network(fluids=fluid_list, p_unit='bar', T_unit='C')
-
-air_molar = {
-    'O2': 0.2059, 'N2': 0.7748, 'CO2': 0.0003, 'H2O': 0.019, 'CH4': 0
-}
+air_molar = {'O2': 0.2059, 'N2': 0.7748, 'CO2': 0.0003, 'H2O': 0.019, 'CH4': 0}
 molar_masses = {key: CPSI('M', key) * 1000 for key in air_molar}
 M_air = sum([air_molar[key] * molar_masses[key] for key in air_molar])
 
 air = {key: value / M_air * molar_masses[key] for key, value in air_molar.items()}
-
-water = {f: (0 if f != 'H2O' else 1) for f in air}
-fuel = {f: (0 if f != 'CH4' else 1) for f in air}
 
 amb = Source('ambient air')
 ch4 = Source('methane')
@@ -68,9 +54,9 @@ c9 = Connection(dr, 'out2', ls, 'in1', label='9')
 
 nw.add_conns(c8, c8p, c11, c11p, c9)
 
-c8.set_attr(p=20, T=25, m=14, fluid=water)
+c8.set_attr(p=20, T=25, m=14, fluid={'water': 1})
 c1.set_attr(p=1.013, T=25, fluid=air, m=91.753028)
-c10.set_attr(T=25, fluid=fuel, p=12)
+c10.set_attr(T=25, fluid={'CH4': 1}, p=12)
 c7.set_attr(p=1.013)
 c3.set_attr(T=850 - 273.15)
 c4.set_attr(T=1520 - 273.15)
@@ -103,9 +89,4 @@ fuel_input.add_comps({'comp': cb, 'base': 'bus'})
 nw.add_busses(heat_output, power_output, fuel_input)
 
 nw.solve('design')
-
-power.set_attr(P=-30e6)
-c1.set_attr(m=None)
-nw.solve('design')
-
 nw.print_results()
