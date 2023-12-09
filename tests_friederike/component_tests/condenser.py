@@ -8,22 +8,22 @@ from chemical_exergy.libChemExAhrendts import Chem_Ex
 nw = Network(T_unit="C", p_unit="bar", h_unit="kJ / kg")
 
 # components
-hx = Condenser('Heat Exchanger')
+cond = Condenser('Heat Exchanger')
 so_h = Source("Source Hot")
 si_h = Sink("Sink Hot")
 so_c = Source("Source Cold")
 si_c = Sink("Sink Cold")
 
 # connections
-c1 = Connection(so_h, 'out1', hx, 'in1', label='Hot In')
-c2 = Connection(so_c, 'out1', hx, 'in2', label='Cold In')
-c3 = Connection(hx, 'out1', si_h, 'in1', label='Hot Out')
-c4 = Connection(hx, 'out2', si_c, 'in1', label='Cold Out')
+c1 = Connection(so_h, 'out1', cond, 'in1', label='Hot In')
+c2 = Connection(so_c, 'out1', cond, 'in2', label='Cold In')
+c3 = Connection(cond, 'out1', si_h, 'in1', label='Hot Out')
+c4 = Connection(cond, 'out2', si_c, 'in1', label='Cold Out')
 
 nw.add_conns(c1, c2, c3, c4)
 
 # define parameters
-hx.set_attr(pr1=1, pr2=1)
+cond.set_attr(pr1=1, pr2=1)
 c1.set_attr(T=110, p=1, fluid={'Water': 1}, m=5)
 c2.set_attr(T=20, p=1, fluid={'Water': 1})
 c4.set_attr(T=30)

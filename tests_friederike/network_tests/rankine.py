@@ -11,7 +11,7 @@ nw = Network(T_unit='C', p_unit='bar', h_unit='kJ / kg')
 # components
 cc = CycleCloser('cycle closer')
 sg = SimpleHeatExchanger('steam generator')
-mc = Condenser('main condenser')
+co = Condenser('main condenser')
 tu = Turbine('steam turbine')
 fp = Pump('feed pump')
 
@@ -20,20 +20,20 @@ cwsi = Sink('cooling water sink')
 
 # connections
 c1 = Connection(cc, 'out1', tu, 'in1', label='1')
-c2 = Connection(tu, 'out1', mc, 'in1', label='2')
-c3 = Connection(mc, 'out1', fp, 'in1', label='3')
+c2 = Connection(tu, 'out1', co, 'in1', label='2')
+c3 = Connection(co, 'out1', fp, 'in1', label='3')
 c4 = Connection(fp, 'out1', sg, 'in1', label='4')
 c0 = Connection(sg, 'out1', cc, 'in1', label='0')
 
 nw.add_conns(c1, c2, c3, c4, c0)
 
-c11 = Connection(cwso, 'out1', mc, 'in2', label='11')
-c12 = Connection(mc, 'out2', cwsi, 'in1', label='12')
+c11 = Connection(cwso, 'out1', co, 'in2', label='11')
+c12 = Connection(co, 'out2', cwsi, 'in1', label='12')
 
 nw.add_conns(c11, c12)
 
 # define parameters
-mc.set_attr(pr1=1, pr2=0.98)
+co.set_attr(pr1=1, pr2=0.98)
 sg.set_attr(pr=0.9)
 tu.set_attr(eta_s=0.9)
 fp.set_attr(eta_s=0.75)
@@ -63,7 +63,11 @@ T_amb = 2.8
 heat_source = Bus("heat effort")
 heat_source.add_comps({"comp": sg})
 
+heat_sink = Bus("heat loss")
+heat_sink.add_comps({"comp": cwso, "base": "bus"}, {"comp": cwsi})
+
 # exergy analysis
-ean = ExergyAnalysis(network=nw, E_F=[heat_source], E_P=[power], E_L=[])
+ean = ExergyAnalysis(network=nw, E_F=[heat_source], E_P=[power], E_L=[heat_sink])
 ean.analyse(pamb=p_amb, Tamb=T_amb)
 ean.print_results()
+

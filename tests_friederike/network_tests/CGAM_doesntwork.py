@@ -5,7 +5,8 @@ from tespy.components import (
     DiabaticCombustionChamber, Sink, Source
 )
 from tespy.connections import Connection, Bus
-from chemical_exergy.libChemExAhrendts import Chem_Ex
+from tespy.tools.helpers import get_chem_ex_lib
+chemexlib = get_chem_ex_lib("Ahrendts")
 
 nw = Network(p_unit='bar', T_unit='C')
 
@@ -90,3 +91,8 @@ nw.add_busses(heat_output, power_output, fuel_input)
 
 nw.solve('design')
 nw.print_results()
+
+'''
+Singularity in jacobian matrix, calculation aborted! 
+Make sure your network does not have any linear dependencies in the parametrisation
+'''

@@ -18,7 +18,7 @@ c2 = Connection(hx, 'out1', si, 'in1', label="My Outlet")
 nw.add_conns(c1, c2)
 
 # define parameters
-hx.set_attr(pr=1, Q=-100000)
+hx.set_attr(pr=1, Q=1000000)
 c1.set_attr(fluid={'Water': 1.0}, T=300, p=10, m=40)
 
 # solve network
@@ -36,6 +36,8 @@ heat_in_B.add_comps({'comp': hx, 'char': +1})
 
 mass_flow_B = Bus('water flow')
 mass_flow_B.add_comps({'comp': so, 'base': 'bus'}, {'comp': si})
+
+nw.add_busses(heat_in_B)
 
 # exergy and exergoeconomic analysis
 exe_eco_input = {'My Heat Exchanger_Z': 100, 'My Source_c': 0.02, 'Heat In_c': 0.05}

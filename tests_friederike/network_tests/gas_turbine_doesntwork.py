@@ -2,7 +2,8 @@ from tespy.networks import Network
 from tespy.components import (DiabaticCombustionChamber, Turbine, Source, Sink, Compressor)
 from tespy.connections import Connection, Ref, Bus
 from tespy.tools import ExergyAnalysis
-from chemical_exergy.libChemExAhrendts import Chem_Ex
+from tespy.tools.helpers import get_chem_ex_lib
+chemexlib = get_chem_ex_lib("Ahrendts")
 
 nw = Network(p_unit="bar", T_unit="C")
 
@@ -31,11 +32,11 @@ c1.set_attr(
     fluid={"Ar": 0.0129, "N2": 0.7553, "CO2": 0.0004, "O2": 0.2314}
 )
 c3.set_attr(m=30)
-c4.set_attr(p=Ref(c1, 1, 0))
-c5.set_attr(m=1, p=1, T=20, fluid={"CO2": 0.03, "CH4": 0.92, "H2": 0.05})
+c4.set_attr(p=1)
+c5.set_attr(m=1, p=Ref(c2, 1, 0), T=100, fluid={"CO2": 0.03, "CH4": 0.92, "H2": 0.05})
 
 
-# bus (necessary ???)                       same result as if adding it after solving
+# bus representing generated electricity
 generator = Bus("generator")
 generator.add_comps(
     {"comp": tu, "char": 0.98, "base": "component"},
@@ -61,7 +62,14 @@ loss_bus = Bus("loss")
 loss_bus.add_comps({"comp": fg, "base": "component"})
 
 # exergy analysis
-ean = ExergyAnalysis(network=nw, E_F=[fuel_bus], E_P=[generator], E_L=[])
-ean.analyse(pamb=1.013, Tamb=20, Chem_Ex = Chem_Ex)
+ean = ExergyAnalysis(network=nw, E_F=[fuel_bus], E_P=[generator], E_L=[loss_bus])
+ean.analyse(pamb=p_amp, Tamb=T_amb, Chem_Ex=chemexlib)
 ean.print_results()
 
+'''
+ex_cond += molar_liquid * y[0]
+               ~~~~~~~~~~~~~^~~~~~
+TypeError: can't multiply sequence by non-int of type 'numpy.float64'
+
+something with the condensation check goes wrong...
+'''
