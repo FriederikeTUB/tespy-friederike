@@ -23,7 +23,7 @@ nw.add_conns(c1,c2)
 tu.set_attr(eta_s=0.8)
 
 c1.set_attr(fluid={'Water': 1}, T=600, p=100, m=20)
-c2.set_attr(x=1)
+c2.set_attr(p=1.2)
 
 # solve
 nw.solve(mode='design')
@@ -43,7 +43,9 @@ steam = Bus('fresh steam dif')
 steam.add_comps({'comp': so, 'base': 'bus'}, {'comp': si})
 
 # exergy and exergoeconomic analysis
-exe_eco_input = {'Source_c': 0.02, 'Turbine_Z': 5}
+exe_eco_input = {'Source_c': 0.02, 'Turbine_Z': 5e3}
 ean = ExergyAnalysis(nw, E_F=[steam], E_P=[power], E_L=[])
 ean.analyse(pamb=p_amb, Tamb=T_amb, Exe_Eco_An=True, Exe_Eco_Costs=exe_eco_input)
 ean.print_results(Exe_Eco_An=True)
+
+#print(power.comps.iloc[0])

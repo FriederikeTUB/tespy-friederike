@@ -261,14 +261,16 @@ class Connection:
         self.local_offdesign = False
         self.printout = True
         """+F+F+F+F++++START++++F+F+F+F+"""
-        self.c_therm = 0
-        self.c_mech = 0
-        self.c_chemical = 0
-        self.c_tot = 0
-        self.C_therm = 0
-        self.C_mech = 0
-        self.C_chemical = 0
-        self.C_tot = 0
+        self.c_therm = np.nan
+        self.c_mech = np.nan
+        self.c_physical = np.nan
+        self.c_chemical = np.nan
+        self.c_tot = np.nan
+        self.C_therm = np.nan
+        self.C_mech = np.nan
+        self.C_physical = np.nan
+        self.C_chemical = np.nan
+        self.C_tot = np.nan
         """+F+F+F+F++++START++++F+F+F+F+"""
 
         # set default values for kwargs

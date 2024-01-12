@@ -104,33 +104,6 @@ class Sink(Component):
         }
         self.E_D = np.nan
         self.epsilon = self._calc_epsilon()
-    """+F+F+F+F++++START++++F+F+F+F+    von Jubran"""
-    def set_sink_costs(self, c_tot=None):
-        self.Z_costs = np.nan
-        self.C_F = np.nan
-        self.C_P = np.nan
-        self.C_D = np.nan
-        self.r = np.nan
-        self.f = np.nan
 
-        if c_tot:
-            self.inl[0].c_tot = c_tot
-            # calculate inlet
-            self.inl[0].Ex_tot = self.inl[0].Ex_physical + self.inl[0].Ex_chemical
-            self.inl[0].C_tot = self.inl[0].c_tot * self.inl[0].Ex_tot
-            self.Z_costs = self.outl[0].C_tot
-            # approx costs per exergy unit fot T,M, PH and CH
-            self.inl[0].C_therm = self.inl[0].C_tot * (self.inl[0].Ex_therm / self.inl[0].Ex_tot)
-            self.inl[0].C_mech = self.inl[0].C_tot * (self.inl[0].Ex_mech / self.inl[0].Ex_tot)
-            self.inl[0].C_chemical = self.inl[0].C_tot * (self.inl[0].Ex_chemical / self.inl[0].Ex_tot)
-
-            self.inl[0].c_therm = 0 if self.inl[0].Ex_therm == 0 else self.inl[0].C_therm / self.inl[
-                0].Ex_therm
-            self.inl[0].c_mech = 0 if self.inl[0].Ex_mech == 0 else self.inl[0].C_mech / self.inl[0].Ex_mech
-            self.inl[0].c_chemical = 0 if self.inl[0].Ex_chemical == 0 else self.inl[0].C_chemical / self.inl[
-                0].Ex_chemical
-
-
-    """+F+F+F+F++++END++++F+F+F+F+    von Jubran"""
 
 

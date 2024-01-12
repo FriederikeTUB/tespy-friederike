@@ -1079,7 +1079,7 @@ class SimpleHeatExchanger(Component):
                     "chemical": np.nan, "physical": np.nan, "massless": np.nan
                 }
         elif self.Q.val > 0:
-            if self.inl[0].T.val_SI >= T0 - 1e-6 and self.outl[0].T.val_SI >= T0 - 1e-6:
+            if self.inl[0].T.val_SI >= T0 and self.outl[0].T.val_SI >= T0:
                 self.E_P = self.outl[0].Ex_physical - self.inl[0].Ex_physical
                 self.E_F = self.outl[0].Ex_therm - self.inl[0].Ex_therm
                 self.E_bus = {
@@ -1127,6 +1127,68 @@ class SimpleHeatExchanger(Component):
         else:
             self.E_D = self.E_F - self.E_P
         self.epsilon = self._calc_epsilon()
+
+
+    """+F+F+F+F++++START++++F+F+F+F+"""
+    def exergoeconomic_balance(self, T0):
+        if self.Q.val < 0:
+            if self.inl[0].T.val_SI >= T0 and self.outl[0].T.val_SI >= T0:
+                if self.dissipative.val:
+                    self.C_P = np.nan
+                else:
+                    self.C_P = self.inl[0].C_therm - self.outl[0].C_therm
+                self.C_F = self.inl[0].C_physical - self.outl[0].C_physical
+            elif self.inl[0].T.val_SI >= T0 and self.outl[0].T.val_SI < T0:
+                self.C_P = self.outl[0].C_therm
+                self.C_F = self.inl[0].C_therm + self.outl[0].C_therm + (
+                        self.inl[0].C_mech - self.outl[0].C_mech)
+            elif self.inl[0].T.val_SI <= T0 and self.outl[0].T.val_SI <= T0:
+                self.C_P = self.outl[0].C_therm - self.inl[0].C_therm
+                self.C_F = self.outl[0].C_therm - self.outl[0].C_therm + (
+                        self.inl[0].C_mech - self.outl[0].C_mech)
+        elif self.Q.val > 0:
+            if self.inl[0].T.val_SI >= T0 and self.outl[0].T.val_SI >= T0:
+                self.C_P = self.outl[0].C_physical - self.inl[0].C_physical
+                self.C_F = self.outl[0].C_therm - self.inl[0].C_therm
+            elif self.inl[0].T.val_SI <= T0 and self.outl[0].T.val_SI > T0:
+                self.C_P = self.outl[0].C_therm + self.inl[0].C_therm
+                self.C_F = self.inl[0].C_therm + (
+                        self.inl[0].C_mech - self.outl[0].C_mech)
+            elif self.inl[0].T.val_SI < T0 and self.outl[0].T.val_SI < T0:
+                if self.dissipative.val:
+                    self.C_P = np.nan
+                else:
+                    self.C_P = self.inl[0].C_therm - self.outl[0].C_therm + (
+                            self.outl[0].C_mech - self.inl[0].C_mech
+                    )
+                self.C_F = self.inl[0].C_therm - self.outl[0].C_therm
+        else:
+            # fully dissipative
+            self.C_P = np.nan
+            self.C_F = self.inl[0].C_physical - self.outl[0].C_physical
+
+        if np.isnan(self.C_P):
+            self.C_D = self.C_F
+        else:
+            self.C_D = self.C_F - self.C_P
+
+        self.c_F = self.C_F / self.E_F
+        self.c_P = self.C_P / self.E_P
+        self.C_D = self.c_F * self.E_D
+        self.r = (self.C_P - self.C_F) / self.C_F
+        self.f = self.Z_costs / (self.Z_costs + self.C_D)
+
+    def aux_eqs(self, T0):
+        # sum of the vales in this array must be 0
+        # [0]*[1] + [2]*[3] + ... = 0
+        # last entry should be type (therm, mech, chemical)
+        # need to add checks if Ex_xxx != 0
+        return [[1/self.inl[0].Ex_mech, self.inl[0],
+                 -1/self.outl[0].Ex_mech, self.outl[0], "mech"],
+                [1,self.inl[0], -1, self.outl[0], "chemical"]]
+
+
+    """+F+F+F+F++++END++++F+F+F+F+"""
 
     def get_plotting_data(self):
         """Generate a dictionary containing FluProDia plotting information.

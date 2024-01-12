@@ -1038,6 +1038,88 @@ class HeatExchanger(Component):
             self.E_D = self.E_F - self.E_P
         self.epsilon = self._calc_epsilon()
 
+    """+F+F+F+F++++START++++F+F+F+F+"""
+
+    def exergoeconomic_balance(self, T0):
+        if all([c.T.val_SI > T0 for c in self.inl + self.outl]):
+            self.C_P = self.outl[1].C_therm - self.inl[1].C_therm
+            self.C_F = self.inl[0].C_physical - self.outl[0].C_physical + (
+                self.inl[1].C_mech - self.outl[1].C_mech)
+        elif all([c.T.val_SI <= T0 for c in self.inl + self.outl]):
+            self.C_P = self.outl[0].C_therm - self.inl[0].C_therm
+            self.C_F = self.inl[1].C_physical - self.outl[1].C_physical + (
+                self.inl[0].C_mech - self.outl[0].C_mech)
+        elif (self.inl[0].T.val_SI > T0 and self.outl[1].T.val_SI > T0 and
+              self.outl[0].T.val_SI <= T0 and self.inl[1].T.val_SI <= T0):
+            self.C_P = self.outl[0].C_therm + self.outl[1].C_therm
+            self.C_F = self.inl[0].C_physical + self.inl[1].C_physical - (
+                self.outl[0].C_mech + self.outl[1].C_mech)
+        elif (self.inl[0].T.val_SI > T0 and self.inl[1].T.val_SI <= T0 and
+              self.outl[0].T.val_SI <= T0 and self.outl[1].T.val_SI <= T0):
+            self.C_P = self.outl[0].C_therm
+            self.C_F = self.inl[0].C_physical + self.inl[1].C_physical - (
+                self.outl[1].C_physical + self.outl[0].C_mech)
+        elif (self.inl[0].T.val_SI > T0 and self.outl[0].T.val_SI > T0 and
+              self.inl[1].T.val_SI <= T0 and self.outl[1].T.val_SI <= T0):
+            self.C_P = np.nan
+            self.C_F = self.inl[0].C_physical - self.outl[0].C_physical + (
+                self.inl[1].C_physical - self.outl[1].C_physical)
+        else:
+            self.C_P = self.outl[1].C_therm
+            self.C_F = self.inl[0].C_physical - self.outl[0].C_physical + (
+                self.inl[1].C_physical - self.outl[1].C_mech)
+
+        if np.isnan(self.C_P):
+            self.C_D = self.C_F
+        else:
+            self.C_D = self.C_F - self.C_P
+
+        self.c_F = self.C_F / self.E_F
+        self.c_P = self.C_P / self.E_P
+        self.C_D = self.c_F * self.E_D
+        self.r = (self.C_P - self.C_F) / self.C_F
+        self.f = self.Z_costs / (self.Z_costs + self.C_D)
+
+    def aux_eqs(self,T0):
+        # sum of the vales in this array must be 0
+        # [0]*[1] + [2]*[3] + ... = 0
+        # last entry should be type (therm, mech, chemical)
+        # need to add checks if Ex_xxx != 0
+        if all([c.T.val_SI > T0 for c in self.inl + self.outl]):
+            return[[1 / self.inl[0].Ex_therm, self.inl[0],
+                    -1 / self.outl[0].Ex_therm, self.outl[0], "therm"],
+                   [1 / self.inl[0].Ex_mech, self.inl[0],
+                    -1 / self.outl[0].Ex_mech, self.outl[0], "mech"],
+                   [1 / self.inl[1].Ex_mech, self.inl[1],
+                    -1 / self.outl[1].Ex_mech, self.outl[1], "mech"],
+                   [1 / self.inl[0].Ex_chemical, self.inl[0],
+                    -1 / self.outl[1].Ex_chemical, self.outl[0], "chemical"],
+                   [1 / self.inl[1].Ex_chemical, self.inl[1],
+                    -1 / self.outl[1].Ex_chemical, self.outl[1], "chemical"]
+                   ]
+
+        elif all([c.T.val_SI <= T0 for c in self.inl + self.outl]):
+            return[]
+
+        elif (self.inl[0].T.val_SI > T0 and self.outl[1].T.val_SI > T0 and
+              self.outl[0].T.val_SI <= T0 and self.inl[1].T.val_SI <= T0):
+            return[]
+
+        elif (self.inl[0].T.val_SI > T0 and self.inl[1].T.val_SI <= T0 and
+              self.outl[0].T.val_SI <= T0 and self.outl[1].T.val_SI <= T0):
+            return[]
+
+        elif (self.inl[0].T.val_SI > T0 and self.inl[1].T.val_SI <= T0 and
+              self.outl[0].T.val_SI > T0 and self.outl[1].T.val_SI > T0):
+            return[]
+
+        elif (self.inl[0].T.val_SI > T0 and self.inl[1].T.val_SI <= T0 and
+              self.outl[0].T.val_SI > T0 and self.outl[1].T.val_SI <= T0):
+            return[]
+
+    """+F+F+F+F++++END++++F+F+F+F+"""
+
+
     def get_plotting_data(self):
         """Generate a dictionary containing FluProDia plotting information.
 
